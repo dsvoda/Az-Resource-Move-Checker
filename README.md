@@ -1,6 +1,6 @@
 # Azure Resource Move Checker
 
-This repository contains Python and PowerShell scripts to check whether Azure resources can be moved to a different subscription.
+This repository contains Python and PowerShell scripts to check whether Azure resources can be moved to a different subscription, resource group, or region.
 
 ## Table of Contents
 
@@ -12,9 +12,9 @@ This repository contains Python and PowerShell scripts to check whether Azure re
 
 ## Overview
 
-Moving Azure resources from one subscription to another can be a complex task, and requires careful planning and execution. This repository provides Python and PowerShell scripts that can help you check whether a given set of Azure resources can be moved to a different subscription.
+Moving Azure resources from one subscription, resource group, or region to another can be a complex task, and requires careful planning and execution. This repository provides Python and PowerShell scripts that can help you check whether a given set of Azure resources can be moved to a different subscription, resource group, or region.
 
-The Python script `azure_resource_move_checker.py` scrapes Microsoft Doc's GitHub page for a list of non-movable resources and saves it to a JSON file named `NonMovableResources.json`. The PowerShell script `Test-AzResourceMove.ps1` imports this JSON file into an array and checks each resource in the source subscription against this list to determine whether it can be moved or not. The result of the check is then written to a CSV file, which can be used to help plan and execute the resource move.
+The Python script `fetch_non_movable_resources.py` scrapes Microsoft Doc's GitHub page for a list of non-movable resources, including resource group and region move support, and saves it to a JSON file named `NonMovableResources.json`. The PowerShell script `Test-AzResourceMove.ps1` imports this JSON file into an array and checks each resource in the source subscription against this list to determine whether it can be moved or not. The result of the check is then written to a CSV file, which can be used to help plan and execute the resource move.
 
 ## Prerequisites
 
@@ -22,13 +22,11 @@ The Python script `azure_resource_move_checker.py` scrapes Microsoft Doc's GitHu
 - Python 3.7 or higher (for Python Script)
 - PowerShell 5.1 or higher (for PowerShell Script)
 - Azure PowerShell module
-- json
-- re
-- requests
+- requests, re, json (for Python Script)
 
 ## Python Script
 
-The `azure_resource_move_checker.py` script is written in Python and uses the `requests` module to scrape Microsoft Doc's GitHub page for a list of non-movable resources. It then saves the list to a JSON file named `NonMovableResources.json`.
+The `fetch_non_movable_resources.py` script is written in Python and uses the `requests` module to scrape Microsoft Doc's GitHub page for a list of non-movable resources, including resource group and region move support. It then saves the list to a JSON file named `NonMovableResources.json`.
 
 To run the Python script, follow these steps:
 
@@ -37,7 +35,7 @@ To run the Python script, follow these steps:
 3. Run the following command to install the required Python packages:
 `pip install -r requirements.txt`
 4. Run the following command to execute the script:
-`python azure_resource_move_checker.py`
+`python fetch_non_movable_resources.py`
 5. The script will generate a JSON file named `NonMovableResources.json` in the root directory of the repository.
 
 ## PowerShell Script
@@ -50,7 +48,7 @@ To run the PowerShell script, follow these steps:
 2. Open a PowerShell terminal and navigate to the root directory of the repository.
 3. Run the following command to execute the script:
 `.\Test-AzResourceMove.ps1`
-4. The script will generate a CSV file named `AzResourceMoveCheck.csv` in the `C:\temp` directory.
+4. The script will generate a CSV file named `Test-AzResourceMove.csv` in the `c:\temp` directory.
 
 ## Contributing
 
