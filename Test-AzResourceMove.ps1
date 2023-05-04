@@ -1,16 +1,19 @@
 # Author: @seanvoda
-# Description: Checks if a resource can be moved to another subscription
-# Version: 1.0.0
-# Date: 2023-04-13
+# Company: @GobiIt
+# Description: Checks if a resource can be moved to another resource group, subscription, or region.
+# Version: 1.1.0
+# Date: 2023-05-04
+
+
+$SourceSubscriptionId = "subscription-id"
+$OutputFile = "c:\temp\Test-AzResourceMove.csv"
 
 $nonMovableResourcesJsonPath = ".\NonMovableResources.json"
-$nonMovableResourceTypes = (Get-Content $nonMovableResourcesJsonPath | ConvertFrom-Json).ResourceTypes
-
-$sourceSubscriptionId = "tenantId"
+$nonMovableResourceData = (Get-Content $nonMovableResourcesJsonPath | ConvertFrom-Json).ResourceTypes
 
 Connect-AzAccount
 
-Set-AzContext -SubscriptionId $sourceSubscriptionId
+Set-AzContext -SubscriptionId $SourceSubscriptionId
 
 $resourceGroups = Get-AzResourceGroup
 
@@ -22,29 +25,34 @@ foreach ($resourceGroup in $resourceGroups) {
     $resources = Get-AzResource -ResourceGroupName $resourceGroup.ResourceGroupName
 
     foreach ($resource in $resources) {
-        if ($nonMovableResourceTypes -contains $resource.ResourceType) {
-            Write-Host "Resource $($resource.ResourceId) is a non-moveable resource type" -ForegroundColor Yellow
+        $resourceData = $nonMovableResourceData | Where-Object { $resource.ResourceType -eq $_.ResourceType } | Select-Object -First 1
 
-            $result = New-Object -TypeName PSObject -Property @{
-                ResourceId          = $resource.ResourceId
-                ResourceType        = $resource.ResourceType
-                ResourceGroupName   = $resourceGroup.ResourceGroupName
-                CanBeMoved          = $false
-            }
-
-            $results += $result
+        $result = New-Object -TypeName PSObject -Property @{
+            ResourceId          = $resource.ResourceId
+            ResourceType        = $resource.ResourceType
+            ResourceGroupName   = $resourceGroup.ResourceGroupName
+            ResourceGroupMove   = [string]"Yes"
+            SubscriptionMove    = [string]"Yes"
+            RegionMove          = [string]"Yes"
         }
-        else {
-            $result = New-Object -TypeName PSObject -Property @{
-                ResourceId          = $resource.ResourceId
-                ResourceType        = $resource.ResourceType
-                ResourceGroupName   = $resourceGroup.ResourceGroupName
-                CanBeMoved          = $true
-            }
 
-            $results += $result
+        if ($resourceData) {
+            $result.ResourceGroupMove = [string]$resourceData.ResourceGroup
+            $result.SubscriptionMove = [string]$resourceData.Subscription
+            $result.RegionMove = [string]$resourceData.Region
         }
+
+        try {
+            Move-AzResource -DestinationResourceGroupName $resourceGroup.ResourceGroupName -DestinationSubscriptionId $targetSubscriptionId -ResourceId $resource.ResourceId -WhatIf -ErrorAction Stop
+            Write-Host "Resource $($resource.ResourceId) can be moved"
+        }
+        catch {
+            Write-Host "Resource $($resource.ResourceId) cannot be moved" -ForegroundColor Red
+        }
+
+        $results += $result
     }
 }
 
-$results | Select-Object ResourceId, ResourceType, ResourceGroupName, CanBeMoved | Export-Csv -Path "c:\temp\AzResourceMoveCheck.csv" -NoTypeInformation
+Write-Host "Saving results to $OutputFile"
+$results | Select-Object ResourceId, ResourceType, ResourceGroupName, ResourceGroupMove, SubscriptionMove, RegionMove | Export-Csv -Path $OutputFile -NoTypeInformation
